@@ -298,7 +298,7 @@ class HealthService {
 
 /// Standalone HealthService that doesn't require database
 /// Used by PatientHomeScreen
-class HealthService {
+class PatientHealthService {
   final Health _health = Health();
   
   static const List<HealthDataType> _types = [

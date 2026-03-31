@@ -52,34 +52,34 @@ final patientAlertsProvider = FutureProvider<List<PatientAlert>>((ref) async {
 });
 
 class PatientVitals {
-  final VitalReading? bp;
-  final VitalReading? spo2;
-  final VitalReading? temp;
-  final VitalReading? fetalHr;
-  final VitalReading? heartRate;
+  final PatientVitalReading? bp;
+  final PatientVitalReading? spo2;
+  final PatientVitalReading? temp;
+  final PatientVitalReading? fetalHr;
+  final PatientVitalReading? heartRate;
   
   PatientVitals({this.bp, this.spo2, this.temp, this.fetalHr, this.heartRate});
   
   factory PatientVitals.fromJson(Map<String, dynamic> json) {
     return PatientVitals(
-      bp: json['bp'] != null ? VitalReading.fromJson(json['bp']) : null,
-      spo2: json['spo2'] != null ? VitalReading.fromJson(json['spo2']) : null,
-      temp: json['temp'] != null ? VitalReading.fromJson(json['temp']) : null,
-      fetalHr: json['fetal_hr'] != null ? VitalReading.fromJson(json['fetal_hr']) : null,
-      heartRate: json['heart_rate'] != null ? VitalReading.fromJson(json['heart_rate']) : null,
+      bp: json['bp'] != null ? PatientVitalReading.fromJson(json['bp']) : null,
+      spo2: json['spo2'] != null ? PatientVitalReading.fromJson(json['spo2']) : null,
+      temp: json['temp'] != null ? PatientVitalReading.fromJson(json['temp']) : null,
+      fetalHr: json['fetal_hr'] != null ? PatientVitalReading.fromJson(json['fetal_hr']) : null,
+      heartRate: json['heart_rate'] != null ? PatientVitalReading.fromJson(json['heart_rate']) : null,
     );
   }
 }
 
-class VitalReading {
+class PatientVitalReading {
   final Map<String, dynamic> values;
   final DateTime recordedAt;
   final String dangerLevel;
   
   VitalReading({required this.values, required this.recordedAt, required this.dangerLevel});
   
-  factory VitalReading.fromJson(Map<String, dynamic> json) {
-    return VitalReading(
+  factory PatientVitalReading.fromJson(Map<String, dynamic> json) {
+    return PatientVitalReading(
       values: json['values'] as Map<String, dynamic>,
       recordedAt: DateTime.parse(json['recordedAt']),
       dangerLevel: json['dangerLevel'] ?? 'normal',
@@ -131,7 +131,7 @@ class PatientHomeScreen extends ConsumerStatefulWidget {
 class _PatientHomeScreenState extends ConsumerState<PatientHomeScreen> {
   bool _isMonitoring = false;
   Timer? _healthKitTimer;
-  final HealthService _healthService = HealthService();
+  final PatientHealthService _healthService = PatientHealthService();
   
   @override
   void initState() {
