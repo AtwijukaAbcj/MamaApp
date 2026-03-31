@@ -29,37 +29,48 @@ jobs:
       
       - name: Install CocoaPods
         working-directory: mobile/ios
-        run: |
-          pod install --repo-update || pod install
+        run: pod install --repo-update
       
-      - name: Prepare iOS build
-        working-directory: mobile
-        run: |
-          flutter build ios --release --no-codesign || true
-          
-      - name: Build unsigned release with xcodebuild
+      - name: Disable code signing in Xcode project
         working-directory: mobile/ios
         run: |
-          xcodebuild -workspace Runner.xcworkspace \
+          # Modify project.pbxproj to disable code signing
+          sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development";/CODE_SIGN_IDENTITY = "";/g' Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = "iPhone Developer";/CODE_SIGN_IDENTITY = "";/g' Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]" = "iPhone Developer";/"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";/g' Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = "";/g' Runner.xcodeproj/project.pbxproj
+          
+      - name: Build iOS Release
+        working-directory: mobile
+        run: |
+          flutter build ios --release --no-codesign
+        continue-on-error: true
+          
+      - name: Build with xcodebuild (unsigned)
+        working-directory: mobile/ios
+        run: |
+          xcodebuild build \
+            -workspace Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -archivePath build/Runner.xcarchive \
-            archive \
+            -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
-            ONLY_ACTIVE_ARCH=NO
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
+            EXPANDED_CODE_SIGN_IDENTITY_NAME=""
       
       - name: Create IPA for AltStore
+        working-directory: mobile/ios
         run: |
-          cd mobile/ios/build/Runner.xcarchive/Products/Applications
+          APP_PATH="build/DerivedData/Build/Products/Release-iphoneos/Runner.app"
           mkdir -p Payload
-          cp -r Runner.app Payload/
+          cp -r "$APP_PATH" Payload/
           zip -r MamaApp.ipa Payload
-          mv MamaApp.ipa ../../../../../..
+          rm -rf Payload
       
       - name: Upload IPA
         uses: actions/upload-artifact@v4
