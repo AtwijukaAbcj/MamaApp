@@ -27,9 +27,20 @@ jobs:
         working-directory: mobile
         run: dart run build_runner build --delete-conflicting-outputs
       
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: mobile/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('mobile/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+      
       - name: Install CocoaPods
         working-directory: mobile/ios
-        run: pod install --repo-update
+        run: |
+          for i in 1 2 3; do
+            pod install && break || sleep 15
+          done
       
       - name: Prepare Flutter iOS build
         working-directory: mobile
