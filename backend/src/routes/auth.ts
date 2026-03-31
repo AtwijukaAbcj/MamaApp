@@ -22,7 +22,10 @@ const registerSchema = z.object({
 
 const loginSchema = z.object({
   phone: z.string(),
-  password: z.string(),
+  password: z.string().optional(),
+  pin: z.string().optional(),
+}).refine(data => data.password || data.pin, {
+  message: "Password or PIN required"
 });
 
 /**
@@ -84,8 +87,9 @@ authRouter.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: validation.error.flatten() });
     }
     
-    const { phone, password } = validation.data;
-    
+    const { phone, password, pin } = validation.data;
+    const credential = password || pin;
+
     // Get user
     const result = await query(
       `SELECT id, password_hash, full_name, role, facility_id, region_id, is_active
@@ -103,8 +107,8 @@ authRouter.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Account is inactive' });
     }
     
-    // Verify password
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    // Verify password/PIN
+    const validPassword = await bcrypt.compare(credential!, user.password_hash);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

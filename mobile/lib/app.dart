@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mama_app/screens/home/home_screen.dart';
 import 'package:mama_app/screens/auth/login_screen.dart';
+import 'package:mama_app/screens/patient/patient_home_screen.dart';
 import 'package:mama_app/providers/auth_provider.dart';
 import 'package:mama_app/theme/app_theme.dart';
 
@@ -19,7 +20,15 @@ class MamaApp extends ConsumerWidget {
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
       home: authState.when(
-        data: (user) => user != null ? const HomeScreen() : const LoginScreen(),
+        data: (user) {
+          if (user == null) return const LoginScreen();
+          // Route to different screens based on user type
+          if (user.isPatient) {
+            return const PatientHomeScreen();
+          } else {
+            return const HomeScreen();
+          }
+        },
         loading: () => const _SplashScreen(),
         error: (_, __) => const LoginScreen(),
       ),

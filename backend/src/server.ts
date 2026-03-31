@@ -10,6 +10,8 @@ import { smsRouter } from './routes/sms.js';
 import { referralRouter } from './routes/referrals.js';
 import { authRouter } from './routes/auth.js';
 import { patientRouter } from './routes/patients.js';
+import { patientAuthRouter } from './routes/patient-auth.js';
+import { patientVitalsRouter } from './routes/patient-vitals.js';
 import { syncRouter } from './routes/sync.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { deviceRouter } from './routes/devices.js';
@@ -53,6 +55,8 @@ app.use('/api/sms', smsRouter);
 app.use('/api/referrals', referralRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/patients', patientRouter);
+app.use('/api/patient', patientAuthRouter);  // Patient self-service auth
+app.use('/api/patient/vitals', patientVitalsRouter);  // Patient vitals submission
 app.use('/api/sync', syncRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/devices', deviceRouter);

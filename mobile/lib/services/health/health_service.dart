@@ -248,4 +248,129 @@ class HealthService {
     if (temp > 37.8 || temp < 36) return 'warning';
     return 'normal';
   }
+  
+  /// Fetch recent vitals formatted for server submission
+  /// Returns a list of maps ready to be sent to /api/patient/vitals/submit
+  Future<List<Map<String, dynamic>>> fetchRecentVitals() async {
+    final vitals = <Map<String, dynamic>>[];
+    
+    try {
+      // Get heart rate
+      final heartRate = await getLatestHeartRate();
+      if (heartRate != null) {
+        vitals.add({
+          'vitalType': 'heart_rate',
+          'values': {'heartRate': heartRate},
+          'source': 'apple_watch',
+          'deviceName': 'Apple Watch',
+        });
+      }
+      
+      // Get SpO2
+      final spo2 = await getLatestSpO2();
+      if (spo2 != null) {
+        vitals.add({
+          'vitalType': 'spo2',
+          'values': {'spo2': spo2},
+          'source': 'apple_watch',
+          'deviceName': 'Apple Watch',
+        });
+      }
+      
+      // Get Blood Pressure (if available from paired BLE device)
+      final bp = await getLatestBloodPressure();
+      if (bp != null) {
+        vitals.add({
+          'vitalType': 'bp',
+          'values': bp,
+          'source': 'apple_watch',
+          'deviceName': 'Apple Watch',
+        });
+      }
+      
+    } catch (e) {
+      // HealthKit not available
+    }
+    
+    return vitals;
+  }
+}
+
+/// Standalone HealthService that doesn't require database
+/// Used by PatientHomeScreen
+class HealthService {
+  final Health _health = Health();
+  
+  static const List<HealthDataType> _types = [
+    HealthDataType.HEART_RATE,
+    HealthDataType.BLOOD_OXYGEN,
+    HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+    HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+    HealthDataType.BODY_TEMPERATURE,
+  ];
+  
+  Future<bool> isAvailable() async {
+    try {
+      // Just check if we can use Health API
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  Future<bool> requestPermissions() async {
+    try {
+      return await _health.requestAuthorization(
+        _types,
+        permissions: _types.map((_) => HealthDataAccess.READ).toList(),
+      );
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  Future<List<Map<String, dynamic>>> fetchRecentVitals() async {
+    final vitals = <Map<String, dynamic>>[];
+    final now = DateTime.now();
+    
+    try {
+      // Get heart rate
+      final hrData = await _health.getHealthDataFromTypes(
+        types: [HealthDataType.HEART_RATE],
+        startTime: now.subtract(const Duration(minutes: 30)),
+        endTime: now,
+      );
+      if (hrData.isNotEmpty) {
+        final hr = (hrData.last.value as NumericHealthValue).numericValue.toDouble();
+        vitals.add({
+          'vitalType': 'heart_rate',
+          'values': {'heartRate': hr},
+          'source': 'apple_watch',
+          'deviceName': 'Apple Watch',
+        });
+      }
+      
+      // Get SpO2
+      final spo2Data = await _health.getHealthDataFromTypes(
+        types: [HealthDataType.BLOOD_OXYGEN],
+        startTime: now.subtract(const Duration(hours: 2)),
+        endTime: now,
+      );
+      if (spo2Data.isNotEmpty) {
+        var spo2 = (spo2Data.last.value as NumericHealthValue).numericValue.toDouble();
+        spo2 = spo2 > 1 ? spo2 : spo2 * 100;
+        vitals.add({
+          'vitalType': 'spo2',
+          'values': {'spo2': spo2},
+          'source': 'apple_watch',
+          'deviceName': 'Apple Watch',
+        });
+      }
+      
+    } catch (e) {
+      // HealthKit not available
+    }
+    
+    return vitals;
+  }
 }
