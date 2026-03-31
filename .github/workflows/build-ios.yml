@@ -31,44 +31,16 @@ jobs:
         working-directory: mobile/ios
         run: pod install --repo-update
       
-      - name: Disable code signing in Xcode project
-        working-directory: mobile/ios
-        run: |
-          # Modify project.pbxproj to disable code signing
-          sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development";/CODE_SIGN_IDENTITY = "";/g' Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_IDENTITY = "iPhone Developer";/CODE_SIGN_IDENTITY = "";/g' Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]" = "iPhone Developer";/"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";/g' Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = "";/g' Runner.xcodeproj/project.pbxproj
-          
       - name: Build iOS Release
         working-directory: mobile
-        run: |
-          flutter build ios --release --no-codesign
-        continue-on-error: true
-          
-      - name: Build with xcodebuild (unsigned)
-        working-directory: mobile/ios
-        run: |
-          xcodebuild build \
-            -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            EXPANDED_CODE_SIGN_IDENTITY="" \
-            EXPANDED_CODE_SIGN_IDENTITY_NAME=""
+        run: flutter build ios --release --no-codesign
       
       - name: Create IPA for AltStore
-        working-directory: mobile/ios
+        working-directory: mobile
         run: |
-          APP_PATH="build/DerivedData/Build/Products/Release-iphoneos/Runner.app"
+          cd build/ios/iphoneos
           mkdir -p Payload
-          cp -r "$APP_PATH" Payload/
+          cp -r Runner.app Payload/
           zip -r MamaApp.ipa Payload
           rm -rf Payload
       
@@ -76,5 +48,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MamaApp-iOS
-          path: mobile/ios/MamaApp.ipa
+          path: mobile/build/ios/iphoneos/MamaApp.ipa
           retention-days: 7
