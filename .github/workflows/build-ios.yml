@@ -31,14 +31,29 @@ jobs:
         working-directory: mobile/ios
         run: pod install --repo-update
       
-      - name: Build iOS Release
-        working-directory: mobile
-        run: flutter build ios --release --no-codesign
-      
-      - name: Create IPA for AltStore
+      - name: Prepare Flutter iOS build
         working-directory: mobile
         run: |
-          cd build/ios/iphoneos
+          flutter build ios --config-only --release --no-codesign
+      
+      - name: Build with xcodebuild (unsigned)
+        working-directory: mobile/ios
+        run: |
+          xcodebuild build \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="-" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+      
+      - name: Create IPA for AltStore
+        working-directory: mobile/ios
+        run: |
+          cd build/Build/Products/Release-iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
           zip -r MamaApp.ipa Payload
@@ -48,5 +63,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MamaApp-iOS
-          path: mobile/build/ios/iphoneos/MamaApp.ipa
+          path: mobile/ios/build/Build/Products/Release-iphoneos/MamaApp.ipa
           retention-days: 7
