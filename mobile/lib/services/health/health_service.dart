@@ -309,6 +309,16 @@ class PatientHealthService {
     HealthDataType.BODY_TEMPERATURE,
   ];
   
+  /// Check if we already have HealthKit permissions
+  Future<bool> hasPermissions() async {
+    try {
+      final result = await _health.hasPermissions(_types);
+      return result ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+  
   Future<bool> isAvailable() async {
     try {
       // Just check if we can use Health API

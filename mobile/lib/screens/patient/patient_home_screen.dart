@@ -130,13 +130,14 @@ class PatientHomeScreen extends ConsumerStatefulWidget {
 
 class _PatientHomeScreenState extends ConsumerState<PatientHomeScreen> {
   bool _isMonitoring = false;
+  bool _isHealthKitConnected = false;
   Timer? _healthKitTimer;
   final PatientHealthService _healthService = PatientHealthService();
   
   @override
   void initState() {
     super.initState();
-    _checkHealthKitPermission();
+    _checkHealthKitStatus();
   }
   
   @override
@@ -145,12 +146,65 @@ class _PatientHomeScreenState extends ConsumerState<PatientHomeScreen> {
     super.dispose();
   }
   
-  Future<void> _checkHealthKitPermission() async {
-    final available = await _healthService.isAvailable();
-    if (available) {
-      final authorized = await _healthService.requestPermissions();
-      if (authorized) {
+  Future<void> _checkHealthKitStatus() async {
+    final hasPermission = await _healthService.hasPermissions();
+    if (mounted) {
+      setState(() => _isHealthKitConnected = hasPermission);
+      if (hasPermission) {
         _startHealthKitSync();
+      }
+    }
+  }
+  
+  Future<void> _connectHealthKit() async {
+    // Show a dialog explaining what we're about to request
+    final shouldProceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Connect Apple Watch'),
+        content: const Text(
+          'MamaApp needs access to your Health data to monitor your vitals from Apple Watch.\n\n'
+          'We will read:\n'
+          '• Heart Rate\n'
+          '• Blood Oxygen (SpO2)\n'
+          '• Blood Pressure\n'
+          '• Body Temperature\n\n'
+          'This helps keep you and your baby safe by detecting danger signs early.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
+            child: const Text('Connect', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    
+    if (shouldProceed == true) {
+      final authorized = await _healthService.requestPermissions();
+      if (mounted) {
+        setState(() => _isHealthKitConnected = authorized);
+        if (authorized) {
+          _startHealthKitSync();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Apple Watch connected! Syncing vitals...'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Permission denied. Please enable in Settings > Health > MamaApp'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -357,20 +411,65 @@ class _PatientHomeScreenState extends ConsumerState<PatientHomeScreen> {
   }
   
   Widget _buildSyncStatusCard() {
+    // Not connected - show connect button
+    if (!_isHealthKitConnected) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.watch_off, color: Colors.orange.shade700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Apple Watch Not Connected',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                  Text(
+                    'Tap to connect and sync your vitals',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              onPressed: _connectHealthKit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.pink,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Connect'),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Connected - show sync status
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _isMonitoring ? Colors.green.shade50 : Colors.grey.shade100,
+        color: _isMonitoring ? Colors.green.shade50 : Colors.green.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _isMonitoring ? Colors.green.shade200 : Colors.grey.shade300,
+          color: _isMonitoring ? Colors.green.shade300 : Colors.green.shade200,
         ),
       ),
       child: Row(
         children: [
           Icon(
             Icons.watch,
-            color: _isMonitoring ? Colors.green : Colors.grey,
+            color: Colors.green.shade700,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -381,7 +480,7 @@ class _PatientHomeScreenState extends ConsumerState<PatientHomeScreen> {
                   _isMonitoring ? 'Syncing with Apple Watch...' : 'Apple Watch Connected',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: _isMonitoring ? Colors.green.shade700 : Colors.grey.shade700,
+                    color: Colors.green.shade700,
                   ),
                 ),
                 Text(
@@ -401,7 +500,7 @@ class _PatientHomeScreenState extends ConsumerState<PatientHomeScreen> {
             IconButton(
               icon: const Icon(Icons.sync),
               onPressed: _syncHealthData,
-              color: Colors.grey,
+              color: Colors.green,
             ),
         ],
       ),
