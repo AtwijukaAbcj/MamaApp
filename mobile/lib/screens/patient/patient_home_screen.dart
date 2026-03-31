@@ -76,7 +76,7 @@ class PatientVitalReading {
   final DateTime recordedAt;
   final String dangerLevel;
   
-  VitalReading({required this.values, required this.recordedAt, required this.dangerLevel});
+  PatientVitalReading({required this.values, required this.recordedAt, required this.dangerLevel});
   
   factory PatientVitalReading.fromJson(Map<String, dynamic> json) {
     return PatientVitalReading(
