@@ -1,0 +1,28 @@
+# MamaApp AI Scoring Engine
+# Python 3.11+
+
+# Core
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+pydantic==2.6.1
+pydantic-settings==2.1.0
+python-dotenv==1.0.1
+
+# ML
+xgboost==2.0.3
+scikit-learn==1.4.0
+shap==0.44.1
+optuna==3.5.0
+numpy==1.26.4
+pandas==2.2.0
+joblib==1.3.2
+
+# MLOps
+mlflow==2.10.2
+
+# Database
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.25
+
+# Utilities
+httpx==0.26.0
